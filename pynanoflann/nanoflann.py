@@ -36,19 +36,10 @@ def _check_arg(points):
 class KDTree(NeighborsBase, KNeighborsMixin,
              RadiusNeighborsMixin, UnsupervisedMixin):
 
-    def __init__(self, X: np.ndarray, n_neighbors=5, radius=1.0,
-                 leaf_size=10, metric='l2'):
-
-        metric = metric.lower()
-        if metric not in ['l1', 'l2']:
-            raise ValueError('Supported metrics: ["l1", "l2"]')
-
-        if metric == 'l2':  # nanoflann uses squared distances
-            radius = radius ** 2
+    def __init__(self, X: np.ndarray, n_neighbors=5, leaf_size=10):
 
         super().__init__(
-            n_neighbors=n_neighbors, radius=radius,
-            leaf_size=leaf_size, metric=metric)
+            n_neighbors=n_neighbors, leaf_size=leaf_size)
 
         self.fit(X)
 
@@ -59,15 +50,14 @@ class KDTree(NeighborsBase, KNeighborsMixin,
             index_path: str Path to a previously built index. Allows you to not rebuild index.
                 NOTE: Must use the same data on which the index was built.
         """
+        if X.shape[1] != 3:
+            raise ValueError('Dimension not supported')
+
         _check_arg(X)
         if X.dtype == np.float32:
-            self.index = nanoflann_ext.KDTree32(self.n_neighbors, self.leaf_size, self.metric, self.radius)
+            self.index = nanoflann_ext.KDTree32(self.n_neighbors, self.leaf_size)
         else:
-            self.index = nanoflann_ext.KDTree64(self.n_neighbors, self.leaf_size, self.metric, self.radius)
-
-        if X.shape[1] > 64:
-            warnings.warn('KD Tree structure is not a good choice for high dimensional spaces.'
-                          'Consider a more suitable search structure.')
+            self.index = nanoflann_ext.KDTree64(self.n_neighbors, self.leaf_size)
 
         self.index.fit(X, index_path if index_path is not None else "")
         self._fit_X = X
@@ -95,18 +85,13 @@ class KDTree(NeighborsBase, KNeighborsMixin,
         check_is_fitted(self, ["_fit_X"], all_or_any=any)
         _check_arg(X)
 
-        if radius is None:
-            radius = self.radius
+        radius = radius ** 2 #nanoflann uses square distances
 
         dists, idxs = self.index.radius_neighbors(X, radius)
         idxs = np.array([np.array(x) for x in idxs])
 
-        if self.metric == 'l2':  # nanoflann returns squared
-            dists = np.array([np.sqrt(np.array(x)).squeeze() for x in dists])
-        else:
-            dists = np.array([np.array(x).squeeze() for x in dists])
-
         if return_distance:
+            dists = np.array([np.sqrt(np.array(x)).squeeze() for x in dists])
             return dists, idxs
         else:
             return idxs

@@ -123,44 +123,10 @@ class KDTree
 public:
     using f_numpy_array_t = pybind11::array_t<num_t, pybind11::array::c_style | pybind11::array::forcecast>;
  
-    KDTree(size_t n_neighbors = 10, size_t leaf_size = 10, std::string metric = "l2", float radius = 1.0f);
+    KDTree(size_t n_neighbors = 10, size_t leaf_size = 10);
     void fit(f_numpy_array_t points, std::string index_path)
     {
-        // Dynamic template instantiation for the popular use cases
-        switch (points.shape(1))
-        {
-        case 1:
-            if (metric == "l2")
-                index = new KDTreeNumpyAdaptor<num_t, 1>(points, leaf_size);
-            else
-                index = new KDTreeNumpyAdaptor<num_t, 1, nanoflann::metric_L1>(points, leaf_size);
-            break;
-        case 2:
-            if (metric == "l2")
-                index = new KDTreeNumpyAdaptor<num_t, 2>(points, leaf_size);
-            else
-                index = new KDTreeNumpyAdaptor<num_t, 2, nanoflann::metric_L1>(points, leaf_size);
-            break;
-        case 3:
-            if (metric == "l2")
-                index = new KDTreeNumpyAdaptor<num_t, 3>(points, leaf_size);
-            else
-                index = new KDTreeNumpyAdaptor<num_t, 3, nanoflann::metric_L1>(points, leaf_size);
-            break;
-        case 4:
-            if (metric == "l2")
-                index = new KDTreeNumpyAdaptor<num_t, 4>(points, leaf_size);
-            else
-                index = new KDTreeNumpyAdaptor<num_t, 4, nanoflann::metric_L1>(points, leaf_size);
-            break;
-        default:
-            // Arbitrary dim but works slightly slower
-            if (metric == "l2")
-                index = new KDTreeNumpyAdaptor<num_t, -1>(points, leaf_size);
-            else
-                index = new KDTreeNumpyAdaptor<num_t, -1, nanoflann::metric_L1>(points, leaf_size);
-            break;
-        }
+        index = new KDTreeNumpyAdaptor<num_t, 3, nanoflann::metric_L2_Simple>(points, leaf_size);
         if (index_path.size())
         {
             index->loadIndex(index_path);
@@ -202,13 +168,11 @@ public:
 private:
     AbstractKDTree<num_t> *index;
     size_t n_neighbors, leaf_size;
-    std::string metric;
-    float radius;
 };
 
 template<typename num_t>
-KDTree<num_t>::KDTree(size_t n_neighbors, size_t leaf_size, std::string metric, float radius)
-    : n_neighbors(n_neighbors), leaf_size(leaf_size), metric(metric), radius(radius)
+KDTree<num_t>::KDTree(size_t n_neighbors, size_t leaf_size)
+    : n_neighbors(n_neighbors), leaf_size(leaf_size)
 {
 }
 
@@ -250,14 +214,14 @@ int KDTree<num_t>::save_index(const std::string& path)
 PYBIND11_MODULE(nanoflann_ext, m)
 {
     pybind11::class_<KDTree<float>>(m, "KDTree32")
-        .def(pybind11::init<size_t, size_t, std::string, float>())
+        .def(pybind11::init<size_t, size_t>())
         .def("fit", &KDTree<float>::fit)
         .def("kneighbors", &KDTree<float>::kneighbors)
         .def("radius_neighbors", &KDTree<float>::radius_neighbors)
         .def("save_index", &KDTree<float>::save_index);
 
     pybind11::class_<KDTree<double>>(m, "KDTree64")
-        .def(pybind11::init<size_t, size_t, std::string, float>())
+        .def(pybind11::init<size_t, size_t>())
         .def("fit", &KDTree<double>::fit)
         .def("kneighbors", &KDTree<double>::kneighbors)
         .def("radius_neighbors", &KDTree<double>::radius_neighbors)
