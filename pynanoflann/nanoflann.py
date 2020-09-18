@@ -75,8 +75,7 @@ class KDTree(NeighborsBase, KNeighborsMixin,
                  but n_samples = {self._fit_X.shape[0]}, n_neighbors = {n_neighbors}")
 
         dists, idxs = self.index.kneighbors(X, n_neighbors)
-        if self.metric == 'l2':  # nanoflann returns squared
-            dists = np.sqrt(dists)
+        dists = np.sqrt(dists)
 
         return dists, idxs
 
