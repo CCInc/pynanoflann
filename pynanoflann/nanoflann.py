@@ -36,7 +36,7 @@ def _check_arg(points):
 class KDTree(NeighborsBase, KNeighborsMixin,
              RadiusNeighborsMixin, UnsupervisedMixin):
 
-    def __init__(self, n_neighbors=5, radius=1.0,
+    def __init__(self, X: np.ndarray, n_neighbors=5, radius=1.0,
                  leaf_size=10, metric='l2'):
 
         metric = metric.lower()
@@ -49,6 +49,8 @@ class KDTree(NeighborsBase, KNeighborsMixin,
         super().__init__(
             n_neighbors=n_neighbors, radius=radius,
             leaf_size=leaf_size, metric=metric)
+
+        self.fit(X)
 
     def fit(self, X: np.ndarray, index_path: Optional[str] = None):
         """
@@ -70,7 +72,8 @@ class KDTree(NeighborsBase, KNeighborsMixin,
         self.index.fit(X, index_path if index_path is not None else "")
         self._fit_X = X
 
-    def kneighbors(self, X, n_neighbors=None):
+    def query(self, X, k=None):
+        n_neighbors = k
         check_is_fitted(self, ["_fit_X"], all_or_any=any)
         _check_arg(X)
 
@@ -87,7 +90,8 @@ class KDTree(NeighborsBase, KNeighborsMixin,
 
         return dists, idxs
 
-    def radius_neighbors(self, X, radius=None, return_distance=True):
+    def query_radius(self, X, r=None, return_distance=False):
+        radius = r
         check_is_fitted(self, ["_fit_X"], all_or_any=any)
         _check_arg(X)
 
