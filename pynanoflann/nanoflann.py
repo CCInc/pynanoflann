@@ -5,8 +5,6 @@ from typing import Optional
 
 import nanoflann_ext
 import numpy as np
-from sklearn.neighbors.base import (KNeighborsMixin, NeighborsBase,
-                                    RadiusNeighborsMixin, UnsupervisedMixin)
 from sklearn.utils.validation import check_is_fitted
 
 SUPPORTED_TYPES = [np.float32, np.float64]
@@ -33,13 +31,12 @@ def _check_arg(points):
         raise ValueError(f'Incorrect shape {len(points.shape)} != 2')
 
 
-class KDTree(NeighborsBase, KNeighborsMixin,
-             RadiusNeighborsMixin, UnsupervisedMixin):
+class KDTree():
 
     def __init__(self, X: np.ndarray, n_neighbors=5, leaf_size=10):
 
-        super().__init__(
-            n_neighbors=n_neighbors, leaf_size=leaf_size)
+        self.n_neighbors = n_neighbors
+        self.leaf_size = leaf_size
 
         self.fit(X)
 
