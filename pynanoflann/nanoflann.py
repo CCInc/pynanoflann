@@ -12,12 +12,12 @@ SUPPORTED_TYPES = [np.float32, np.float64]
 
 def pickler(c):
     X = c._fit_X if hasattr(c, '_fit_X') else None
-    return unpickler, (c.n_neighbors, c.radius, c.leaf_size, c.metric, X)
+    return unpickler, (c.n_neighbors, c.leaf_size, X)
 
 
-def unpickler(n_neighbors, radius, leaf_size, metric, X):
+def unpickler(n_neighbors, leaf_size, X):
     # Recreate an kd-tree instance
-    tree = KDTree(n_neighbors, radius, leaf_size, metric)
+    tree = KDTree(n_neighbors, leaf_size)
     # Unpickling of the fitted instance
     if X is not None:
         tree.fit(X)
