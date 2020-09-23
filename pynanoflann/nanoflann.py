@@ -5,22 +5,25 @@ from typing import Optional
 
 import nanoflann_ext
 import numpy as np
+import tempfile
+import os
+import uuid
 from sklearn.utils.validation import check_is_fitted
 
 SUPPORTED_TYPES = [np.float32, np.float64]
 
+TMP_DIR = tempfile.mkdtemp()
 
 def pickler(c):
     X = c._fit_X if hasattr(c, '_fit_X') else None
-    return unpickler, (c.n_neighbors, c.leaf_size, X)
+    filename = os.path.join(TMP_DIR, str(uuid.uuid4().hex))
+    index = c.save_index(filename)
+    return unpickler, (c.n_neighbors, c.leaf_size, X, filename)
 
 
-def unpickler(n_neighbors, leaf_size, X):
+def unpickler(n_neighbors, leaf_size, X, filename):
     # Recreate an kd-tree instance
-    tree = KDTree(n_neighbors, leaf_size)
-    # Unpickling of the fitted instance
-    if X is not None:
-        tree.fit(X)
+    tree = KDTree(X, n_neighbors, leaf_size, filename)
     return tree
 
 
@@ -33,12 +36,12 @@ def _check_arg(points):
 
 class KDTree():
 
-    def __init__(self, X: np.ndarray, n_neighbors=5, leaf_size=10):
+    def __init__(self, X: np.ndarray, n_neighbors=5, leaf_size=10, index_path=None):
 
         self.n_neighbors = n_neighbors
         self.leaf_size = leaf_size
 
-        self.fit(X)
+        self.fit(X, index_path)
 
     def fit(self, X: np.ndarray, index_path: Optional[str] = None):
         """
